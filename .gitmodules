@@ -1,6 +1,6 @@
 [submodule "frontend"]
 	path = frontend
-	url = https://harik_klar@bitbucket.org/klarsys/zmote-frontend.git
+	url = git@bitbucket.org:klarsys/zmote-frontend.git
 [submodule "app/models"]
 	path = app/models
-	url = https://harik_klar@bitbucket.org/klarsys/zmote-dbmodels.git
+	url = https://github.com/zmoteio/zmote-dbmodels.git
