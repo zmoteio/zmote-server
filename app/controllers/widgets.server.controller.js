@@ -17,7 +17,6 @@ var mongoose = require('mongoose'),
 
 exports.list = function(req, res) {
     var ip = req.ip.replace(/.*:/, '');
-    console.log("External IP: ", ip);
     Widget.find({
         $or: [{
             $and: [{
@@ -55,9 +54,7 @@ exports.listGadgets = function(req, res) {
         });
 }
 exports.addGadget = function(req, res) {
-    console.log("addGadget");
     if (!mongoose.Types.ObjectId.isValid(req.body.remote)) {
-        console.log("Bad obj id");
         return res.status(400).send({
             message: 'Remote is invalid'
         });
@@ -70,14 +67,12 @@ exports.addGadget = function(req, res) {
     });
     gadget.save()
         .then(function(g) {
-            console.log("gadget save", req.widget, g);
             req.widget.gadgets.push(g._id);
             return req.widget.save();
         })
         .then(function() {
             res.json(gadget);
         }, function(err) {
-            console.log("save error", err);
             return res.status(400).send({
                 message: errorHandler.getErrorMessage(err)
             });
@@ -101,7 +96,6 @@ exports.removeGadget = function(req, res) {
     var ndx = _.findIndex(req.widget.gadgets, function(g) {
         return g._id.toString() == req.gadget._id.toString();
     });
-    console.log("ndx=", ndx);
     if (ndx < 0)
         return res.status(400).send({
             message: "Remote's entry not found in widget"
@@ -117,10 +111,8 @@ exports.removeGadget = function(req, res) {
             return req.gadget.remove();
         })
         .then(function() {
-            console.log("suvvess");
             res.json(req.gadget);
         }, function(err) {
-            console.log("err", err);
             return res.status(400).send({
                 message: errorHandler.getErrorMessage(err)
             });
@@ -136,7 +128,6 @@ exports.updateUserRemote = function(req, res) {
     	delete upsertRec._id;
     	p = Gadget.update({_id: req.gadget.userRemote._id}, upsertRec, {upsert: true}).save();
     } else { */ // New userRemote
-    console.log("Saving", req.body);
     p = userRemote.save()
         .then(function() {
             if (req.gadget.userRemote)
@@ -154,7 +145,6 @@ exports.updateUserRemote = function(req, res) {
         .then(function(gadget) {
             res.json(gadget);
         }, function(err) {
-            console.log("err", err);
             return res.status(400).send({
                 message: errorHandler.getErrorMessage(err)
             });
@@ -165,7 +155,6 @@ exports.updateUserRemote = function(req, res) {
  */
 function isClientAdded(clients, client) {
     var ndx = _.findIndex(clients, function(c) {
-        //console.log("Checking", c, client, (c.toString() == client.toString()));
         return (c.toString() == client.toString());
     });
     if (ndx < 0)
@@ -174,17 +163,13 @@ function isClientAdded(clients, client) {
 }
 exports.auth = function(req, res, next) {
     if (isClientAdded(req.widget.clients, req.client._id)) {
-        console.log("Previous access: authorized");
+        //console.log("Previous access: authorized");
         next();
     } else if (req.widget.connected && req.widget.extIP == req.ip.replace(/.*:/, '')) {
-        console.log("IP match: authorized");
-        console.log("clients", req.widget.clients);
-        console.log("req.client", req.client._id.toString());
-        console.log("Adding client to authorize list");
+        //console.log("IP match: authorized");
         req.widget.clients.push(req.client._id);
         req.widget.save()
             .then(function() {
-                console.log("Saved");
                 next();
             }, next);
     } else
@@ -198,13 +183,11 @@ var mqttReady;
 function mqttInit() {
     mqttReady = q.defer();
     var mqttClient = mqtt.connect(config.mqtt_config);
-    console.log("mqttCOnnect", config.mqtt_config);
     mqttClient.on('connect', function() {
         mqttReady.resolve(mqttClient);
     });
     mqttClient.on('message', function(topic, message) {
         var msg = JSON.parse(message.toString());
-        console.log("MQTT Message", msg);
         var path = topic.split('/');
         var chipID = path[2];
         if (!msg.id)
@@ -239,9 +222,7 @@ function mqttInit() {
 function pubCommand(widget, command) {
     if (!mqttReady)
         mqttInit();
-    console.log("pubCOmmand");
     return mqttReady.promise.then(function(client) {
-        console.log("Publisj");
         client.subscribe('zmote/widget/' + widget.chipID);
         client.publish('zmote/towidget/' + widget.chipID, JSON.stringify(command), {
             qos: 1
@@ -259,7 +240,6 @@ exports.sendCommand = function(req, res) {
         postdata: JSON.stringify(req.body),
         id: cmd._id
     };
-    console.log("snedCOmmand", mqttPkt);
     cmd.save()
         .then(function() {
             return pubCommand(req.widget, mqttPkt);
@@ -319,7 +299,9 @@ exports.demoWidget = function(req, res) {
             });
             res.json([widget]);
         }, function(err) {
-            console.error("Error finding or creating demo widget", err, err.stack);
+            return res.status(400).send({
+                message: errorHandler.getErrorMessage(err)
+            });
         });
 };
 

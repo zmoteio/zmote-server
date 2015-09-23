@@ -41,7 +41,6 @@ module.exports = function(app) {
             var args = req.body.protocol + ' ' + req.body.device + ' ' + (req.body.subdevice || -1) + ' ' + req.body.function;
             if (req.body.misc && req.body.misc.match(/T=1/))
                 args += ' 1';
-            console.log(req.body);
             res.end(es(encodeirz + args).toString().trim());
             return next();
         });
