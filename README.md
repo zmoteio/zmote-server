@@ -42,8 +42,7 @@ Returns a structure with STA and AP mac.  The STA mac needs to be prefixed to ea
 
 Re-scan available SSID.  Returns an array of access points
 
-```
-#!json
+```json
 
   [
     {
@@ -67,8 +66,7 @@ Re-scan available SSID.  Returns an array of access points
 
 Connect to a particular SSID.  The postdata should specify ssid and password.
 
-```
-#!json
+```json
    {
       "ssid": "Neverland",
       "password": "MichealJacksonRules"
@@ -83,8 +81,7 @@ Prepare to receive IR code.  Clear any old IR code received
 
 Get last received IR code.  Returns an array of ON/OFF times (in us) as shown below
 
-```
-#!json
+```json
    {
       "trigger": [
          9000, // ON time
@@ -98,8 +95,7 @@ Get last received IR code.  Returns an array of ON/OFF times (in us) as shown be
 
 Transmit IR code.  See example format below
 
-```
-#!json
+```json
    {
       "period": 910222, // Modulation waveform half period (in us expressed in Q16 format)
       "n": 40,          // The number of codes from the seq[] array for the first transmission
@@ -149,8 +145,7 @@ Get a list of matching remotes.  `query` parameter must be supplied and must be 
 
 Create a new gadget and associate to the widget.  The post data should look like:
 
-```
-#!json
+```json
    {
       "name": "<gadget_name>",
       "remote": "<remote_id>"
@@ -177,8 +172,7 @@ Delete a gadget. If gadget uses a userRemote, that will be deleted as well.Clien
 
 Create a new userRemote entry and associate with said Gadget and Widget.  Post data should look like
 
-```
-#!json
+```json
    {
       "userremote": {/* complete record */}
    }
@@ -209,8 +203,7 @@ PUT /widgets/<widget_id>/api/ir/write
 
 The response may not be immediately available.  In such cases, the server replies with:
 
-```
-#!json
+```json
 {
    "_id": "<command_id>",
    "pending": true,
@@ -226,6 +219,40 @@ GET /widgets/<widget_id>/command/<command_id>
 Once again, `{"pending":true}` will be returned until the reply has been received (over MQTT) from the widget.  When the actual reply is received, that will be returned instead.  Should the request timeout or should an erroneous reply be received, the record associated with the command will be deleted, and the client will get a `404 Not Found` response.
 
 
+```
+GET /ota/firmware
+```
+
+Return latest firmware version available for OTA
+
+```json
+{"version":"0.2.0}
+```
+
+```
+GET /ota/fs
+```
+
+Return latest file system version available
+
+```json
+{"fs_version":1443631264792}
+```
+
+```
+POST /widgets/<widget_id>/ota
+```
+
+Trigger an OTA update of either the firmware or the file system.
+The payload should be either `{"version":"xyz"}` or `{"fs_version": xyz}`.  
+The value of version file (i.e., `xyz` in above) is ignored.  But the key indicates what to update.
+
+   1. To check for firmware update completion, read `/widgets` and wait for 
+   the `"ota"` flag to become false and the `"version"` to get the expected value
+   2. To check for fs update completion, read `/api/config/00` and the `fs_version` to match the expected value
+
+Client must be authenticated before this API can be invoked.
+
 
 ## IR Protocol Service REST API
 
@@ -236,9 +263,10 @@ Tries to decode IR ON/OFF times (in us) to one of known IR Protocol.
 POST data is same as the one received from `GET /<sta_mac>/api/ir/read` API.
 
 Response would be `{"error":"not found"}` on failure, IR specification (as below) on success:
-````json
+
+```json
 {"protocol":"RC5","device":3,"function":5,"misc":"no repeat: T=0"}
-````
+```
 
 Presence of `T=0` or `T=1` in `misc` indicates that the protocol uses toggle bit (and its value for the data just decoded).
 
