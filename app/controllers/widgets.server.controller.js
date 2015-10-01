@@ -18,6 +18,7 @@ var mongoose = require('mongoose'),
 
 exports.list = function(req, res) {
     var ip = req.ip.replace(/.*:/, '');
+    console.log("req.ip="+ip);
     Widget.find({
         $or: [{
             $and: [{
@@ -155,9 +156,11 @@ exports.updateUserRemote = function(req, res) {
  * Client has access to widget
  */
 function isClientAdded(clients, client) {
+    console.log("Looking for "+client+" in "+clients.join(","));
     var ndx = _.findIndex(clients, function(c) {
         return (c.toString() == client.toString());
     });
+    console.log(">>> Found="+ndx);
     if (ndx < 0)
         return false;
     return true;
