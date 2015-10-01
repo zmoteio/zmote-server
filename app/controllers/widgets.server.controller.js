@@ -12,7 +12,8 @@ var mongoose = require('mongoose'),
     Remote = mongoose.model('Remote'),
     Command = mongoose.model('Command'),
     _ = require('lodash'),
-    q = require('q');
+    q = require('q'),
+    axios = require('axios');
 
 
 exports.list = function(req, res) {
@@ -162,6 +163,7 @@ function isClientAdded(clients, client) {
     return true;
 }
 exports.auth = function(req, res, next) {
+    //return next();
     if (isClientAdded(req.widget.clients, req.client._id)) {
         //console.log("Previous access: authorized");
         next();
@@ -304,7 +306,57 @@ exports.demoWidget = function(req, res) {
             });
         });
 };
-
+exports.otaInfo = function(req, res) {
+    var path = '/zmote-firmware.json';
+    if (req.url.match(/fs$/))
+        path = '/zmote-firmware_fs.json';
+    var url = 'http://'+process.env.OTA_SERVER_IP+':'+process.env.OTA_SERVER_PORT+
+        '/' + process.env.OTA_SERVER_PATH;
+    console.log("url=", url+path);
+    axios.get(url+path)
+        .then(function (resp) {
+            res.json(resp.data);
+        }, function (err) {
+            console.log("axios err", err, err.stack);
+            return res.status(400).send({
+                message: errorHandler.getErrorMessage(err)
+            });
+        });
+}
+exports.triggerOta = function(req, res) {
+    var widget = req.widget;
+    var getMsg = q.when({ 
+        command: "update",
+        rom0: "/"+process.env.OTA_SERVER_PATH+"/rom0.bin",
+        rom1: "/"+process.env.OTA_SERVER_PATH+"/rom1.bin"
+    });
+    if (req.body.fs_version) { // FS update
+        var url = 'http://'+process.env.OTA_SERVER_IP+':'+process.env.OTA_SERVER_PORT+
+            '/' + process.env.OTA_SERVER_PATH + '/zmote-firmware_fs.json';
+        getMsg = axios.get(url)
+            .then(function (resp) {
+                resp.data.command = "updatefs";
+                resp.data.blobs.forEach(function (b) {
+                    b[1] = "/"+process.env.OTA_SERVER_PATH+b[1];
+                });
+                return resp.data;
+            });
+    }
+    getMsg
+        .then(function (msg) {
+            msg.ip = process.env.OTA_SERVER_IP;
+            msg.port = process.env.OTA_SERVER_PORT;
+            return pubCommand(widget, msg);
+        })
+        .then(function () {
+            res.json({status: 'ok'});
+        }, function (err) {
+            console.log("axios err", err, err.stack);
+            return res.status(400).send({
+                message: errorHandler.getErrorMessage(err)
+            });
+        });    
+};
 function demoWidgetById(req, res, next, id) {
 	DemoWidget.findById(id).populate('gadgets').exec(function(err, widget) {
         if (err) {

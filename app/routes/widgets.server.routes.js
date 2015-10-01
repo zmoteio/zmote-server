@@ -53,6 +53,15 @@ module.exports = function(app) {
 	app.route('/demo/demo_mac/*')
 		.get(demo.dummyWidget)
 		;
+	app.route('/ota/firmware')
+		.get(widgets.otaInfo);
+	app.route('/ota/fs')
+		.get(widgets.otaInfo);
+	app.route('/widgets/:widgetId/ota')
+		.all(clients.auth)
+		.all(widgets.auth)
+		.all(widgets.triggerOta)
+		;
 	app.param('widgetId', widgets.widgetById);
 	app.param('gadgetId', widgets.gadgetById);
 };
