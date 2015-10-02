@@ -23,12 +23,12 @@ There are six different components to the zmote system:
 
 The rest of this documentation focuses on the API at four major module boundaries.
 
-   1. [Widget-Client REST API](#markdown-header-widget-client-rest-api)
+   1. [Widget-Client REST API](#widget-client-rest-api)
       * IR read/write API: Allows client to read, write, list and save IR codes
       * Device Settings API: WiFi station and access point configuration, access to other settings
-   2. [Server-Client REST API](#markdown-header-server-client-rest-api): Find widgets, list/modify remotes in LIRC database, link/unlink widgets with gadgets
-   3. [IR Protocol Service REST API](#markdown-header-ir-protocol-service-rest-api): Decode / Encode IR signals across various formats
-   4. [Widget-Broker MQTT API](#markdown-header-widget-broker-mqtt-api): Allows widget to advertise presence, listen for commands and log actions. 
+   2. [Server-Client REST API](#server-client-rest-api): Find widgets, list/modify remotes in LIRC database, link/unlink widgets with gadgets
+   3. [IR Protocol Service REST API](#ir-protocol-service-rest-api): Decode / Encode IR signals across various formats
+   4. [Widget-Broker MQTT API](#widget-broker-mqtt-api): Allows widget to advertise presence, listen for commands and log actions. 
 
 
 ##  Widget-Client REST API
@@ -189,7 +189,7 @@ Post data will be same as above. Client must be authenticated before this API ca
 ### `GET /widgets/<widget_id>/api/...`
 ### `PUT /widgets/<widget_id>/api/...`
 
-MQTT-over-REST API for controlling widget.  In cases where the widget is not on the same network as the client, an authenticated client may control a widget by using this API.  URLs, verbs and post data are same as those shown in [Widget-Client REST API](#markdown-header-widget-client-rest-api).  The URL is changed by prefixing `/widget/<widget_id>`.  The `<sta_mac>/` portion of the URL is optional.  For example:
+MQTT-over-REST API for controlling widget.  In cases where the widget is not on the same network as the client, an authenticated client may control a widget by using this API.  URLs, verbs and post data are same as those shown in [Widget-Client REST API](#widget-client-rest-api).  The URL is changed by prefixing `/widget/<widget_id>`.  The `<sta_mac>/` portion of the URL is optional.  For example:
 
 ```
 PUT /<sta_mac>/api/ir/write
@@ -219,19 +219,15 @@ GET /widgets/<widget_id>/command/<command_id>
 Once again, `{"pending":true}` will be returned until the reply has been received (over MQTT) from the widget.  When the actual reply is received, that will be returned instead.  Should the request timeout or should an erroneous reply be received, the record associated with the command will be deleted, and the client will get a `404 Not Found` response.
 
 
-```
-GET /ota/firmware
-```
+###  `GET /ota/firmware`
 
 Return latest firmware version available for OTA
 
 ```json
-{"version":"0.2.0}
+{"version":"0.2.0"}
 ```
 
-```
-GET /ota/fs
-```
+### `GET /ota/fs`
 
 Return latest file system version available
 
@@ -239,9 +235,7 @@ Return latest file system version available
 {"fs_version":1443631264792}
 ```
 
-```
-POST /widgets/<widget_id>/ota
-```
+### `POST /widgets/<widget_id>/ota`
 
 Trigger an OTA update of either the firmware or the file system.
 The payload should be either `{"version":"xyz"}` or `{"fs_version": xyz}`.  
@@ -300,6 +294,6 @@ Response would be `{"error":"unknown protocol"}` on failure, Transmit IR code as
    3. Widget Goodbye: Sent by widget before entering OTA `{"goodbye": true}`
    4. Widget Keypress: Sent by widget when untriggered keypress is detected (Sent only if config parameter `"log" >= "1"`) The message is the same as the one described in `GET /<sta_mac>/api/ir/read`
   5. Widget Keylog: Sent by widget after successfully sending a sequence (Sent only if config parameter `"log" >= "2"`).  The message is the same as the command received (See `PUT /<sta_mac>/api/ir/write` command)
-  6. ToWidget REST Adaptor: General mechanism to remotely use [Widget-Client REST API](#markdown-header-widget-client-rest-api) `{ "command":"VERB", "url":"/api/..", "postdata":"<postdata>", "id": "<command_id>" }`
+  6. ToWidget REST Adaptor: General mechanism to remotely use [Widget-Client REST API](#widget-client-rest-api) `{ "command":"VERB", "url":"/api/..", "postdata":"<postdata>", "id": "<command_id>" }`
   7. Widget REST Response: `{"id":<command_id>, "response":"<response_string>"}`
   8. ToWidget Update: Start OTA `{ "command":"OTA", "ip": "<ip_address>", "port": "<port_no>", "rom0": "/path/to/rom0.bin", "rom1": "/path/to/rom1.bin"}`
