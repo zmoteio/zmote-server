@@ -328,11 +328,11 @@ exports.otaInfo = function(req, res) {
 }
 exports.triggerOta = function(req, res) {
     var widget = req.widget;
-    var getMsg = q.when({ 
-        command: "update",
-        rom0: "/"+process.env.OTA_SERVER_PATH+"/rom0.bin",
-        rom1: "/"+process.env.OTA_SERVER_PATH+"/rom1.bin"
-    });
+    var getMsg;
+    if (widget.ota) {
+        // OTA already in progress
+        return res.json({status: 'busy'});
+    }
     if (req.body.fs_version) { // FS update
         var url = 'http://'+process.env.OTA_SERVER_IP+':'+process.env.OTA_SERVER_PORT+
             '/' + process.env.OTA_SERVER_PATH + '/zmote-firmware_fs.json';
@@ -342,13 +342,28 @@ exports.triggerOta = function(req, res) {
                 resp.data.blobs.forEach(function (b) {
                     b[1] = "/"+process.env.OTA_SERVER_PATH+b[1];
                 });
+                resp.data.ip = process.env.OTA_SERVER_IP;
+                resp.data.port = process.env.OTA_SERVER_PORT;
                 return resp.data;
+            });
+    } else {
+        var msg = { 
+            ip: process.env.OTA_SERVER_IP,
+            port: process.env.OTA_SERVER_PORT,
+            command: "update",
+            rom0: "/"+process.env.OTA_SERVER_PATH+"/rom0.bin",
+            rom1: "/"+process.env.OTA_SERVER_PATH+"/rom1.bin"
+        };
+        widget.ota_version = req.body.version;
+        widget.ota_retries = 0;
+        widget.ota_msg = JSON.stringify(msg);
+        getMsg = widget.save()
+            .then(function () {
+                return msg;
             });
     }
     getMsg
         .then(function (msg) {
-            msg.ip = process.env.OTA_SERVER_IP;
-            msg.port = process.env.OTA_SERVER_PORT;
             return pubCommand(widget, msg);
         })
         .then(function () {
