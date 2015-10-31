@@ -38,7 +38,7 @@ module.exports = function(app) {
             res.writeHead(200, {
                 'Content-Type': 'application/json; charset=utf-8'
             });
-            var args = req.body.protocol + ' ' + req.body.device + ' ' + (req.body.subdevice || -1) + ' ' + req.body.function;
+            var args = req.body.protocol + ' ' + req.body.device + ' ' + (req.body.subdevice || -1) + ' ' + req.body.obc;
             if (req.body.misc && req.body.misc.match(/T=1/))
                 args += ' 1';
             res.end(es(encodeirz + args).toString().trim());
