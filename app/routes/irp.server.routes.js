@@ -8,7 +8,7 @@ var encodeirz = heroku ? '/app/bin/encodeirz ' : 'encodeirz ';
 
 var code2gc = function(code, compress) {
     if (compress === undefined) compress = true;
-    var gc = 'sendir,1:3,0,' + code.frequency + ',' + (code.repeat[0] + 1) + ',' + (code.repeat[1] + 1);
+    var gc = code.frequency + ',' + (code.repeat[0] + 1) + ',' + (code.repeat[1] + 1);
     var p = [], q = [];
     if (compress) {
         var alphabet = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
@@ -48,7 +48,7 @@ var rawcode = function(trigger) {
 }
 
 var analyse = function(trigger) {
-    var args, spec, code, tcode, gc, gc1, confidence = 0;
+    var args, spec, code, tcode, gc, tgc, confidence = 0;
     var temp = JSON.parse(es(decodeir + trigger.join(' ')).toString().trim());
     if (temp.error === undefined) {
         spec = temp;
@@ -63,7 +63,7 @@ var analyse = function(trigger) {
                 args += ' 1';
                 tcode = JSON.parse(es(encodeirz + args).toString().trim());
                 tcode.repeat[0] = 1;
-                gc1 = code2gc(tcode);
+                tgc = code2gc(tcode);
             }
         }
         else {
@@ -77,7 +77,7 @@ var analyse = function(trigger) {
         code = rawcode(trigger);
         gc = code2gc(code);
     }
-    return {confidence: confidence, spec: spec, gc: gc, gc1: gc1, code: code, tcode: tcode};
+    return {confidence: confidence, spec: spec, gc: gc, tgc: tgc, code: code, tcode: tcode};
 }
 
 module.exports = function(app) {
