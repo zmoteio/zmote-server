@@ -28,7 +28,7 @@ var code2gc = function(code, compress) {
                 gc += alphabet[j];
             }
         }
-        gc = gc.replace(/([A-Z]),/g, "$1");
+        gc = gc.replace(/([A-Z]),/g, '$1');
     }
     else {
         gc += ',' + JSON.stringify(code.seq).replace('[', '').replace(']', '');
@@ -36,12 +36,45 @@ var code2gc = function(code, compress) {
     return gc;
 }
 
+var gc2code = function(gc) {
+    gc = gc.replace(/([A-Z])/g, ',$1,').replace(/,,/g, ',');
+    var data = gc.split(',');
+    if (data[0] === 'sendir') {
+        data.shift();
+        data.shift();
+        data.shift();
+    }
+    var f = parseInt(data.shift());
+    var r = parseInt(data.shift());
+    var o = parseInt(data.shift());
+    var seq = [];
+    var p = {}, q = {}, k = 0;
+    var alphabet = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
+    while (data.length > 0) {
+        var v = data.shift();
+        if (v.match(/[A-Z]/)) {
+            seq.push(p[v]);
+            seq.push(q[v]);
+        }
+        else {
+            v = parseInt(v);
+            seq.push(v);
+            p[alphabet[k]] = v;
+            v = parseInt(data.shift());
+            seq.push(v);
+            q[alphabet[k]] = v;
+            k++;
+        }
+    }
+    return {frequency: f, seq: seq, n: seq.length, repeat: [r - 1, o - 1, seq.length]}
+}
+
 var rawcode = function(trigger) {
     var frequency = 38000;
     var seq = [];
 
     for (var i = 0; i < trigger.length; i++) {
-        seq.push(Math.floor(trigger[i] * 1000.0 / frequency + 0.5));
+        seq.push(Math.floor(trigger[i] * frequency / 1000000.0 + 0.5));
     }
 
     return {frequency: frequency, n: seq.length, seq: seq, repeat: [0, 0, 0]};
@@ -49,6 +82,7 @@ var rawcode = function(trigger) {
 
 var analyse = function(trigger) {
     var args, spec, code, tcode, gc, tgc, confidence = 0;
+    if (trigger.length % 2 == 1) trigger.push(100000);
     var temp = JSON.parse(es(decodeir + trigger.join(' ')).toString().trim());
     if (temp.error === undefined) {
         spec = temp;
