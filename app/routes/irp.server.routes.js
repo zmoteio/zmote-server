@@ -69,8 +69,8 @@ var gc2code = function(gc) {
     return {frequency: f, seq: seq, n: seq.length, repeat: [r - 1, o - 1, seq.length]}
 }
 
-var rawcode = function(trigger) {
-    var frequency = 38000;
+var rawcode = function(trigger, frequency) {
+    if (frequency === undefined) frequency = 38000;
     var seq = [];
 
     for (var i = 0; i < trigger.length; i++) {
@@ -81,37 +81,45 @@ var rawcode = function(trigger) {
 }
 
 var analyse = function(trigger) {
-    var args, spec, code, tcode, gc, tgc, confidence = 0;
+    var args, spec, code;
+    var response = { confidence: 0 };
+    for (var i = 0; i < trigger.length; i++) trigger[i] = parseInt(trigger[i])
     if (trigger.length % 2 == 1) trigger.push(100000);
-    var temp = JSON.parse(es(decodeir + trigger.join(' ')).toString().trim());
-    if (temp.error === undefined) {
-        spec = temp;
-        confidence += 32;
+    spec = JSON.parse(es(decodeir + trigger.join(' ')).toString().trim());
+    if (spec.error === undefined) {
+        response.confidence += 32;
+        response.spec = spec;
         args = spec.protocol + ' ' + spec.device + ' ' + (spec.subdevice || -1) + ' ' + spec.obc;
         code = JSON.parse(es(encodeirz + args).toString().trim());
         if (code.error === undefined) {
-            confidence += 64;
+            response.confidence += 64;
             code.repeat[0] = 1;
-            gc = code2gc(code);
+            response.code = code;
+            response.gc = code2gc(code);
             if (spec.misc && spec.misc.match(/T=/)) {
                 args += ' 1';
-                tcode = JSON.parse(es(encodeirz + args).toString().trim());
-                tcode.repeat[0] = 1;
-                tgc = code2gc(tcode);
+                code = JSON.parse(es(encodeirz + args).toString().trim());
+                code.repeat[0] = 1;
+                response.tcode = code;
+                response.tgc = code2gc(code);
             }
         }
         else {
             // console.log('encode error');
+            response.trigger = trigger;
             code = rawcode(trigger);
-            gc = code2gc(code);
+            response.code = code;
+            response.gc = code2gc(code);
         }
     }
     else {
         // console.log('decode error');
+        response.trigger = trigger;
         code = rawcode(trigger);
-        gc = code2gc(code);
+        response.code = code;
+        response.gc = code2gc(code);
     }
-    return {confidence: confidence, spec: spec, gc: gc, tgc: tgc, code: code, tcode: tcode};
+    return response;
 }
 
 module.exports = function(app) {
