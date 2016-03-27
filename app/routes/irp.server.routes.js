@@ -20,8 +20,10 @@ var code2gc = function(code, compress) {
                     break;
                 }
             if (j == -1) {
-                p.push(code.seq[i]);
-                q.push(code.seq[i + 1]);
+                if (p.length < 15) {
+                    p.push(code.seq[i]);
+                    q.push(code.seq[i + 1]);
+                }
                 gc += ',' + code.seq[i] + ',' + code.seq[i + 1];
             }
             else {
@@ -69,6 +71,39 @@ var gc2code = function(gc) {
     return {frequency: f, seq: seq, n: seq.length, repeat: [r - 1, o - 1, seq.length]}
 }
 
+var gc2trigger = function(gc) {
+    gc = gc.replace(/([A-Z])/g, ',$1,').replace(/,,/g, ',');
+    var data = gc.split(',');
+    if (data[0] === 'sendir') {
+        data.shift();
+        data.shift();
+        data.shift();
+    }
+    var f = parseInt(data.shift());
+    var r = parseInt(data.shift());
+    var o = parseInt(data.shift());
+    var trigger = [];
+    var p = {}, q = {}, k = 0;
+    var alphabet = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
+    while (data.length > 0) {
+        var v = data.shift();
+        if (v.match(/[A-Z]/)) {
+            trigger.push(p[v]);
+            trigger.push(q[v]);
+        }
+        else {
+            v = parseInt(parseInt(v) * 1000000.0 / f + 0.5);
+            trigger.push(v);
+            p[alphabet[k]] = v;
+            v = parseInt(parseInt(data.shift()) * 1000000.0 / f + 0.5);
+            trigger.push(v);
+            q[alphabet[k]] = v;
+            k++;
+        }
+    }
+    return trigger;
+}
+
 var rawcode = function(trigger, frequency) {
     if (frequency === undefined) frequency = 38000;
     var seq = [];
@@ -83,7 +118,7 @@ var rawcode = function(trigger, frequency) {
 var analyse = function(trigger) {
     var args, spec, code;
     var response = { confidence: 0 };
-    for (var i = 0; i < trigger.length; i++) trigger[i] = parseInt(trigger[i])
+    for (var i = 0; i < trigger.length; i++) trigger[i] = parseInt(trigger[i]);
     if (trigger.length % 2 == 1) trigger.push(100000);
     spec = JSON.parse(es(decodeir + trigger.join(' ')).toString().trim());
     if (spec.error === undefined) {
@@ -130,6 +165,9 @@ module.exports = function(app) {
                 'Content-Type': 'application/json; charset=utf-8'
             });
             var trigger = req.params.data.replace(/,/g, ' ').split(' ');
+            if (trigger[0] === 'sendir') {
+                trigger = gc2trigger(req.params.data);
+            }
             res.end(JSON.stringify(analyse(trigger)));
             return next();
         });
