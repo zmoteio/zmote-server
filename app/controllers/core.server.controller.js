@@ -9,3 +9,6 @@ exports.index = function(req, res) {
 		request: req
 	});
 };
+exports.buy = function(req, res) {
+	res.redirect('/buy.html');
+};
