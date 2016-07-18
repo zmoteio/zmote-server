@@ -10,5 +10,6 @@ exports.index = function(req, res) {
 	});
 };
 exports.buy = function(req, res) {
-	res.redirect('/buy.html');
+	//res.redirect('/buy.html');
+	res.redirect('https://www.tindie.com/products/harik/zmote-wi-fi-universal-remote/');
 };
