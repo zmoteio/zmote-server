@@ -6,71 +6,6 @@ var decodeir = heroku ? '/app/bin/decodeir ' : 'decodeir ';
 var encodeir = heroku ? '/app/bin/encodeir ' : 'encodeir ';
 var encodeirz = heroku ? '/app/bin/encodeirz ' : 'encodeirz ';
 
-var code2gc = function(code, compress) {
-    if (compress === undefined) compress = true;
-    var gc = code.frequency + ',' + (code.repeat[0] + 1) + ',' + (code.repeat[1] + 1);
-    var p = [], q = [];
-    if (compress) {
-        var alphabet = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
-        for (var i = 0; i < code.seq.length; i += 2) {
-            var j = -1;
-            for (var k = 0; k < p.length; k++)
-                if (p[k] === code.seq[i] && q[k] === code.seq[i + 1]) {
-                    j = k;
-                    break;
-                }
-            if (j == -1) {
-                if (p.length < 15) {
-                    p.push(code.seq[i]);
-                    q.push(code.seq[i + 1]);
-                }
-                gc += ',' + code.seq[i] + ',' + code.seq[i + 1];
-            }
-            else {
-                gc += alphabet[j];
-            }
-        }
-        gc = gc.replace(/([A-Z]),/g, '$1');
-    }
-    else {
-        gc += ',' + JSON.stringify(code.seq).replace('[', '').replace(']', '');
-    }
-    return gc;
-}
-
-var gc2code = function(gc) {
-    gc = gc.replace(/([A-Z])/g, ',$1,').replace(/,,/g, ',');
-    var data = gc.split(',');
-    if (data[0] === 'sendir') {
-        data.shift();
-        data.shift();
-        data.shift();
-    }
-    var f = parseInt(data.shift());
-    var r = parseInt(data.shift());
-    var o = parseInt(data.shift());
-    var seq = [];
-    var p = {}, q = {}, k = 0;
-    var alphabet = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
-    while (data.length > 0) {
-        var v = data.shift();
-        if (v.match(/[A-Z]/)) {
-            seq.push(p[v]);
-            seq.push(q[v]);
-        }
-        else {
-            v = parseInt(v);
-            seq.push(v);
-            p[alphabet[k]] = v;
-            v = parseInt(data.shift());
-            seq.push(v);
-            q[alphabet[k]] = v;
-            k++;
-        }
-    }
-    return {frequency: f, seq: seq, n: seq.length, repeat: [r - 1, o - 1, seq.length]}
-}
-
 var gc2trigger = function(gc) {
     gc = gc.replace(/([A-Z])/g, ',$1,').replace(/,,/g, ',');
     var data = gc.split(',');
@@ -130,13 +65,11 @@ var analyse = function(trigger) {
             response.confidence += 64;
             code.repeat[0] = 1;
             response.code = code;
-            response.gc = code2gc(code);
             if (spec.misc && spec.misc.match(/T=/)) {
                 args += ' 1';
                 code = JSON.parse(es(encodeirz + args).toString().trim());
                 code.repeat[0] = 1;
                 response.tcode = code;
-                response.tgc = code2gc(code);
             }
         }
         else {
@@ -144,7 +77,6 @@ var analyse = function(trigger) {
             response.trigger = trigger;
             code = rawcode(trigger);
             response.code = code;
-            response.gc = code2gc(code);
         }
     }
     else {
@@ -152,7 +84,6 @@ var analyse = function(trigger) {
         response.trigger = trigger;
         code = rawcode(trigger);
         response.code = code;
-        response.gc = code2gc(code);
     }
     return response;
 }
