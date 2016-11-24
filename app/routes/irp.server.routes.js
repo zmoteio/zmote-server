@@ -1,10 +1,9 @@
 'use strict';
 
 var es = require('child_process').execSync;
-var heroku = (process.env.NODE_HOME || '').indexOf('heroku') > -1
-var decodeir = heroku ? '/app/bin/decodeir ' : 'decodeir ';
-var encodeir = heroku ? '/app/bin/encodeir ' : 'encodeir ';
-var encodeirz = heroku ? '/app/bin/encodeirz ' : 'encodeirz ';
+var decodeir = '/home/harik_klarsys_com/zmote-server/bin/decodeir ';
+var encodeir = '/home/harik_klarsys_com/zmote-server/bin/encodeir ';
+var encodeirz = '/home/harik_klarsys_com/zmote-server/bin/encodeirz ';
 
 var gc2trigger = function(gc) {
     gc = gc.replace(/([A-Z])/g, ',$1,').replace(/,,/g, ',');
